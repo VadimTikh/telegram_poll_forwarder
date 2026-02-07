@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+session.txt
+*.log
+logs/
+data/
+.idea/
+.claude/
+nul

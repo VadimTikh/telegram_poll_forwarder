@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poll Forwarder — Панель управления</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 24px;
+      color: #333;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Login screen */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .login-box {
+      background: #fff;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .login-box h1 {
+      margin-bottom: 8px;
+    }
+
+    .login-box p {
+      text-align: center;
+      color: #888;
+      margin-bottom: 24px;
+    }
+
+    /* Main screen */
+    #main-screen { display: none; }
+
+    /* Form elements */
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #4a9eff;
+      box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #4a9eff;
+      color: #fff;
+      width: 100%;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: #3a8eef; }
+
+    .btn-success {
+      background: #34c759;
+      color: #fff;
+    }
+
+    .btn-success:hover:not(:disabled) { background: #2ab74d; }
+
+    .btn-danger {
+      background: #ff3b30;
+      color: #fff;
+    }
+
+    .btn-danger:hover:not(:disabled) { background: #e0332a; }
+
+    .btn-secondary {
+      background: #e5e5ea;
+      color: #333;
+    }
+
+    .btn-secondary:hover:not(:disabled) { background: #d5d5da; }
+
+    /* Status indicator */
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .status-dot.running { background: #34c759; box-shadow: 0 0 8px rgba(52,199,89,0.4); }
+    .status-dot.stopped { background: #ff3b30; }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* QR section */
+    .qr-container {
+      text-align: center;
+    }
+
+    .qr-container img {
+      margin: 16px auto;
+      display: block;
+      border-radius: 8px;
+    }
+
+    .qr-instructions {
+      color: #888;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+
+    .auth-status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .auth-status.authorized {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .auth-status.not-authorized {
+      background: #fbe9e7;
+      color: #c62828;
+    }
+
+    /* Logs */
+    .logs-box {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      padding: 12px;
+      border-radius: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 1000;
+      transition: opacity 0.3s;
+    }
+
+    .toast.success { background: #34c759; }
+    .toast.error { background: #ff3b30; }
+
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .header-bar h1 { margin-bottom: 0; }
+
+    .btn-logout {
+      background: none;
+      border: 1px solid #ddd;
+      color: #888;
+      padding: 6px 14px;
+      font-size: 13px;
+    }
+
+    .btn-logout:hover { background: #f5f5f5; }
+
+    .connected-since {
+      font-size: 13px;
+      color: #888;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Poll Forwarder</h1>
+    <p>Панель управления</p>
+    <input type="password" id="password-input" placeholder="Пароль" autofocus>
+    <button class="btn-primary" id="login-btn" onclick="login()">Войти</button>
+  </div>
+</div>
+
+<!-- Main Screen -->
+<div id="main-screen" class="container">
+  <div class="header-bar">
+    <h1>Poll Forwarder</h1>
+    <button class="btn-logout" onclick="logout()">Выйти</button>
+  </div>
+
+  <!-- Bot Status -->
+  <div class="card">
+    <h2>Статус бота</h2>
+    <div class="status-row">
+      <div>
+        <div class="status-indicator">
+          <span class="status-dot stopped" id="status-dot"></span>
+          <span id="status-text">Бот остановлен</span>
+        </div>
+        <div class="connected-since" id="connected-since"></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn-success" id="start-btn" onclick="botStart()">Запустить</button>
+        <button class="btn-danger" id="stop-btn" onclick="botStop()" disabled>Остановить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="card">
+    <h2>Настройки</h2>
+    <label for="source-group">Telegram группа для мониторинга</label>
+    <input type="text" id="source-group" placeholder="username или ID группы">
+
+    <label for="destination-chat">Куда пересылать</label>
+    <input type="text" id="destination-chat" placeholder="me (Избранное)" title="me — Избранное, username — юзернейм без @, -100xxxxxxxxxx — ID чата">
+
+    <label for="call-phone">Номер для звонка</label>
+    <input type="text" id="call-phone" placeholder="+380991234567">
+
+    <label for="cooldown">Кулдаун между звонками (сек)</label>
+    <input type="number" id="cooldown" min="10" max="3600" value="60">
+
+    <button class="btn-primary" onclick="saveSettings()">Сохранить настройки</button>
+  </div>
+
+  <!-- Telegram Auth -->
+  <div class="card">
+    <h2>Авторизация Telegram</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <span class="auth-status not-authorized" id="auth-status">Не авторизован</span>
+      <button class="btn-secondary" id="qr-btn" onclick="requestQr()">Авторизовать Telegram</button>
+    </div>
+    <div class="qr-container" id="qr-container" style="display:none;">
+      <img id="qr-image" src="" alt="QR-код" width="256" height="256">
+      <p class="qr-instructions">
+        Откройте Telegram &rarr; Настройки &rarr; Устройства &rarr;<br>
+        Подключить устройство &rarr; Сканируйте QR-код
+      </p>
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div class="card">
+    <h2>Логи</h2>
+    <div class="logs-box" id="logs-box">Загрузка...</div>
+  </div>
+</div>
+
+<script>
+  let token = localStorage.getItem('pf_token') || '';
+
+  // Check existing token on load
+  if (token) {
+    api('GET', '/api/status').then(() => {
+      showMain();
+    }).catch(() => {
+      token = '';
+      localStorage.removeItem('pf_token');
+    });
+  }
+
+  // Enter key on password
+  document.getElementById('password-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') login();
+  });
+
+  async function api(method, url, body) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+    if (body) opts.body = JSON.stringify(body);
+
+    const res = await fetch(url, opts);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Ошибка запроса');
+    return data;
+  }
+
+  async function login() {
+    const pw = document.getElementById('password-input').value;
+    if (!pw) return;
+
+    try {
+      const data = await api('POST', '/api/login', { password: pw });
+      token = data.token;
+      localStorage.setItem('pf_token', token);
+      showMain();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
+  function logout() {
+    token = '';
+    localStorage.removeItem('pf_token');
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-screen').style.display = 'none';
+  }
+
+  function showMain() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-screen').style.display = 'block';
+    refreshStatus();
+    refreshLogs();
+    // Auto-refresh every 5 seconds
+    setInterval(refreshStatus, 5000);
+    setInterval(refreshLogs, 5000);
+  }
+
+  async function refreshStatus() {
+    try {
+      const data = await api('GET', '/api/status');
+
+      // Bot status
+      const dot = document.getElementById('status-dot');
+      const text = document.getElementById('status-text');
+      const startBtn = document.getElementById('start-btn');
+      const stopBtn = document.getElementById('stop-btn');
+      const since = document.getElementById('connected-since');
+
+      if (data.bot.running) {
+        dot.className = 'status-dot running';
+        text.textContent = 'Бот работает';
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        if (data.bot.connectedSince) {
+          const d = new Date(data.bot.connectedSince);
+          since.textContent = 'Запущен: ' + d.toLocaleString('ru-RU');
+        }
+      } else {
+        dot.className = 'status-dot stopped';
+        text.textContent = 'Бот остановлен';
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        since.textContent = '';
+      }
+
+      // Config
+      if (data.config) {
+        document.getElementById('source-group').value = data.config.sourceGroup || '';
+        document.getElementById('destination-chat').value = data.config.destinationChat || '';
+        document.getElementById('call-phone').value = data.config.callPhoneNumber || '';
+        document.getElementById('cooldown').value = data.config.callCooldownSeconds || 60;
+      }
+
+      // Auth status
+      const authEl = document.getElementById('auth-status');
+      if (data.tgAuthorized) {
+        authEl.className = 'auth-status authorized';
+        authEl.textContent = 'Авторизован';
+      } else {
+        authEl.className = 'auth-status not-authorized';
+        authEl.textContent = 'Не авторизован';
+      }
+    } catch (err) {
+      if (err.message === 'Не авторизован') {
+        logout();
+      }
+    }
+  }
+
+  async function refreshLogs() {
+    try {
+      const data = await api('GET', '/api/logs');
+      const box = document.getElementById('logs-box');
+      box.textContent = data.logs.join('\n') || 'Нет логов';
+      box.scrollTop = box.scrollHeight;
+    } catch {}
+  }
+
+  async function saveSettings() {
+    try {
+      const body = {
+        sourceGroup: document.getElementById('source-group').value,
+        destinationChat: document.getElementById('destination-chat').value || 'me',
+        callPhoneNumber: document.getElementById('call-phone').value,
+        callCooldownSeconds: Number(document.getElementById('cooldown').value) || 60,
+      };
+      await api('POST', '/api/config', body);
+      toast('Настройки сохранены', 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
+  let qrPollInterval = null;
+
+  async function requestQr() {
+    const btn = document.getElementById('qr-btn');
+    btn.disabled = true;
+    btn.textContent = 'Генерация...';
+
+    try {
+      const data = await api('GET', '/api/qr');
+      if (data.qrCode) {
+        showQr(data.qrCode);
+      }
+
+      // Poll for QR updates
+      if (qrPollInterval) clearInterval(qrPollInterval);
+      qrPollInterval = setInterval(async () => {
+        try {
+          const status = await api('GET', '/api/qr/status');
+          if (status.authorized) {
+            clearInterval(qrPollInterval);
+            qrPollInterval = null;
+            document.getElementById('qr-container').style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = 'Авторизовать Telegram';
+            toast('Telegram авторизован!', 'success');
+            refreshStatus();
+            return;
+          }
+          if (status.qrCode) {
+            showQr(status.qrCode);
+          }
+        } catch {}
+      }, 2000);
+
+      // Stop polling after 2 minutes
+      setTimeout(() => {
+        if (qrPollInterval) {
+          clearInterval(qrPollInterval);
+          qrPollInterval = null;
+          btn.disabled = false;
+          btn.textContent = 'Авторизовать Telegram';
+        }
+      }, 120000);
+
+    } catch (err) {
+      toast(err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Авторизовать Telegram';
+    }
+  }
+
+  function showQr(src) {
+    const container = document.getElementById('qr-container');
+    const img = document.getElementById('qr-image');
+    img.src = src;
+    container.style.display = 'block';
+  }
+
+  async function botStart() {
+    document.getElementById('start-btn').disabled = true;
+    try {
+      await api('POST', '/api/bot/start');
+      toast('Бот запущен', 'success');
+      refreshStatus();
+    } catch (err) {
+      toast(err.message, 'error');
+      document.getElementById('start-btn').disabled = false;
+    }
+  }
+
+  async function botStop() {
+    document.getElementById('stop-btn').disabled = true;
+    try {
+      await api('POST', '/api/bot/stop');
+      toast('Бот остановлен', 'success');
+      refreshStatus();
+    } catch (err) {
+      toast(err.message, 'error');
+      document.getElementById('stop-btn').disabled = false;
+    }
+  }
+
+  function toast(msg, type) {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; }, 2500);
+    setTimeout(() => { el.remove(); }, 3000);
+  }
+</script>
+</body>
+</html>
