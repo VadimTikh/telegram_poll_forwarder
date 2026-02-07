@@ -33,6 +33,22 @@ function saveSession(session: StringSession): void {
 }
 
 export async function initClient(): Promise<TelegramClient> {
+  // Reuse existing client if it's alive
+  if (client) {
+    try {
+      if (client.connected) {
+        return client;
+      }
+      // Try to reconnect existing client
+      await client.connect();
+      return client;
+    } catch {
+      // Connection dead — recreate
+      logger.info('Переподключение: старая сессия недоступна, создаю новый клиент');
+      client = null;
+    }
+  }
+
   const secrets = getEnvSecrets();
   const session = loadSession();
 

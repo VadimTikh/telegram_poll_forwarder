@@ -348,6 +348,7 @@
 
 <script>
   let token = localStorage.getItem('pf_token') || '';
+  let configLoaded = false;
 
   // Check existing token on load
   if (token) {
@@ -437,12 +438,13 @@
         since.textContent = '';
       }
 
-      // Config
-      if (data.config) {
+      // Config — load only once on page open
+      if (data.config && !configLoaded) {
         document.getElementById('source-group').value = data.config.sourceGroup || '';
         document.getElementById('destination-chat').value = data.config.destinationChat || '';
         document.getElementById('call-phone').value = data.config.callPhoneNumber || '';
         document.getElementById('cooldown').value = data.config.callCooldownSeconds || 60;
+        configLoaded = true;
       }
 
       // Auth status
@@ -479,6 +481,7 @@
         callCooldownSeconds: Number(document.getElementById('cooldown').value) || 60,
       };
       await api('POST', '/api/config', body);
+      configLoaded = false;
       toast('Настройки сохранены', 'success');
     } catch (err) {
       toast(err.message, 'error');
