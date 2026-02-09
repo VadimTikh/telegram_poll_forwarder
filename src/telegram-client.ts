@@ -90,7 +90,7 @@ export async function loginWithQr(
       { apiId: secrets.tgApiId, apiHash: secrets.tgApiHash },
       {
         qrCode: async (code) => {
-          const url = `tg://login?token=${code.token.toString('base64url')}`;
+          const url = `tg://login?token=${Buffer.from(code.token).toString('base64url')}`;
           try {
             const qrBase64 = await QRCode.toDataURL(url, { width: 256, margin: 2 });
             onQrCode(qrBase64);

@@ -94,15 +94,16 @@ app.post('/api/config', requireAuth, (req, res) => {
 // QR code auth
 let latestQrCode: string | null = null;
 let qrAuthInProgress = false;
+let qrTimestamp: number = 0;
 
 app.get('/api/qr', requireAuth, async (_req, res) => {
   try {
     if (qrAuthInProgress) {
       // Return latest QR code if auth is already in progress
       if (latestQrCode) {
-        res.json({ qrCode: latestQrCode, status: 'waiting' });
+        res.json({ qrCode: latestQrCode, status: 'waiting', qrTimestamp });
       } else {
-        res.json({ qrCode: null, status: 'generating' });
+        res.json({ qrCode: null, status: 'generating', qrTimestamp });
       }
       return;
     }
@@ -113,6 +114,7 @@ app.get('/api/qr', requireAuth, async (_req, res) => {
     // Start QR auth in background
     startQrAuth((qrBase64) => {
       latestQrCode = qrBase64;
+      qrTimestamp = Date.now();
     }).then((success) => {
       qrAuthInProgress = false;
       if (success) {
@@ -129,9 +131,9 @@ app.get('/api/qr', requireAuth, async (_req, res) => {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     if (latestQrCode) {
-      res.json({ qrCode: latestQrCode, status: 'waiting' });
+      res.json({ qrCode: latestQrCode, status: 'waiting', qrTimestamp });
     } else {
-      res.json({ qrCode: null, status: 'generating' });
+      res.json({ qrCode: null, status: 'generating', qrTimestamp });
     }
   } catch (error) {
     qrAuthInProgress = false;
@@ -148,6 +150,7 @@ app.get('/api/qr/status', requireAuth, async (_req, res) => {
       authorized: tgAuthorized,
       qrCode: latestQrCode,
       inProgress: qrAuthInProgress,
+      qrTimestamp,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

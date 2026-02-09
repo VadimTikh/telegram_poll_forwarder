@@ -183,6 +183,7 @@
       margin: 16px auto;
       display: block;
       border-radius: 8px;
+      transition: opacity 0.3s;
     }
 
     .qr-instructions {
@@ -489,6 +490,7 @@
   }
 
   let qrPollInterval = null;
+  let lastQrTimestamp = 0;
 
   async function requestQr() {
     const btn = document.getElementById('qr-btn');
@@ -499,6 +501,9 @@
       const data = await api('GET', '/api/qr');
       if (data.qrCode) {
         showQr(data.qrCode);
+      }
+      if (data.qrTimestamp) {
+        lastQrTimestamp = data.qrTimestamp;
       }
 
       // Poll for QR updates
@@ -517,6 +522,10 @@
             return;
           }
           if (status.qrCode) {
+            if (status.qrTimestamp && status.qrTimestamp !== lastQrTimestamp) {
+              lastQrTimestamp = status.qrTimestamp;
+              flashQr();
+            }
             showQr(status.qrCode);
           }
         } catch {}
@@ -544,6 +553,12 @@
     const img = document.getElementById('qr-image');
     img.src = src;
     container.style.display = 'block';
+  }
+
+  function flashQr() {
+    const img = document.getElementById('qr-image');
+    img.style.opacity = '0.3';
+    setTimeout(() => { img.style.opacity = '1'; }, 300);
   }
 
   async function botStart() {
